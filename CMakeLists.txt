@@ -33,13 +33,28 @@ ExternalProject_Add(pugixml
         -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
 )
 
-set(CMAKE_CXX_STANDARD 11)
+if(WIN32)
+
+    ExternalProject_Add(dirent
+        GIT_REPOSITORY https://github.com/tronkko/dirent.git
+        GIT_TAG 1.23.2
+        GIT_SHALLOW 1
+        BUILD_IN_SOURCE 0
+        CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${CMAKE_INSTALL_PREFIX}
+            -DCMAKE_BUILD_TYPE=MinSizeRel
+            -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    )
+
+endif()
+
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 include_directories(${CMAKE_INSTALL_PREFIX}/include)
 link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
-add_executable(pip2cmake main.cpp pip.cpp)
+add_executable(pip2cmake main.cpp pip.cpp module.cpp utilities.cpp)
 add_dependencies(pip2cmake pugixml)
 
 if(UNIX)

@@ -7,14 +7,13 @@
 #include <fstream>
 #include <sys/stat.h>
 #include <algorithm>
+#include <cstring>
+#include <dirent.h>
+#include <memory>
+#include "utilities.h"
 
-
-inline std::string trim(const std::string &s)
+namespace pip2cmake
 {
-   auto wsfront=std::find_if_not(s.begin(),s.end(),[](int c){return std::isspace(c);});
-   auto wsback=std::find_if_not(s.rbegin(),s.rend(),[](int c){return std::isspace(c);}).base();
-   return (wsback<=wsfront ? std::string() : std::string(wsfront,wsback));
-}
 
 void pip::getMetaData(std::string inpfile)
 {
@@ -60,17 +59,17 @@ void pip::getMetaData(std::string inpfile)
     }
 
     std::string key;
-    auto lines = split(ss.str(),'\n');
+    auto lines = utilities::split(ss.str(),'\n');
     for(auto &l : lines)
     {
-        l = trim(l);
+        l = utilities::trim(l);
         if(l.find(':') != std::string::npos)
         {
-            auto kv = split(l, ':');
+            auto kv = utilities::split(l, ':');
             if(!kv.empty())
             {
                 key = kv[0];
-                metaData[key] = trim(kv[1]);
+                metaData[key] = utilities::trim(kv[1]);
             }
         }
         else
@@ -80,28 +79,41 @@ void pip::getMetaData(std::string inpfile)
         }
     }
 
-    dependencies = split(metaData["dependencies"],',');
+    dependencies = utilities::split(metaData["dependencies"],',');
     for(auto &d : dependencies)
     {
-        d = trim(d);
+        d = utilities::trim(d);
     }
 
-    exporters = split(metaData["exporters"],',');
+    exporters = utilities::split(metaData["exporters"],',');
     for(auto &e : exporters)
     {
-        e = trim(e);
+        e = utilities::trim(e);
     }
 
-    moduleFlags = split(metaData["moduleFlags"],',');
+    moduleFlags = utilities::split(metaData["moduleFlags"],',');
     for(auto &m : moduleFlags)
     {
-        m = trim(m);
+        m = utilities::trim(m);
     }
 }
 
-std::vector<std::string> pip::getDependencies()
+std::list<std::string> pip::getDependencies()
 {
-    return dependencies;
+    std::list<std::string> list; 
+    for(auto &item : modules)
+    {
+        list.push_back(item.second->getID());
+        auto deps = item.second->getDependencies();
+        for(auto &d : deps)
+        {
+            list.push_back(d);
+        }
+    }
+    list.sort();
+    list.unique();
+
+    return list;
 }
 
 std::vector<std::string> pip::getExporters()
@@ -152,10 +164,10 @@ std::string pip::getWebsite()
 pip::pip(std::string infile, std::string outpath)
 {
     static constexpr char DEFAULT_VERSION[] = { '1', '.', '0', '.', '0', 0 };
-
     version = DEFAULT_VERSION;
 
     base_path = infile.substr(0, infile.find_last_of("\\/"));
+    sepd = (base_path.find("\\") != std::string::npos) ? "\\" : "/";
 
     if(outpath.empty())
     {
@@ -167,16 +179,18 @@ pip::pip(std::string infile, std::string outpath)
     }
 
     getMetaData(infile);
+
+    getModules();
+
+    auto deps = getDependencies();
+    for(auto &dep : deps)
+    {
+        std::cout << "dep: " << dep << std::endl;
+    }
 }
 
 void pip::print()
 {
-    std::cout << "[Dependencies]\n";
-    for(auto const& item : getDependencies())
-    {
-        std::cout << item << std::endl;
-    }
-
     std::cout << "[Exporters]\n";
     for(auto const& item : getExporters())
     {
@@ -203,13 +217,91 @@ void pip::print()
     std::cout << getVersion() << std::endl;
     std::cout << "[Website]\n";
     std::cout << getWebsite() << std::endl;
+    std::cout << "[Dependencies]\n";
+    for(auto &mod : modules)
+    {
+        mod.second->print();
+    }
 }
 
 std::string pip::get_cmake_file()
 {
-    std::string sepd = (base_path.find("\\") != std::string::npos) ? "\\" : "/";
     std::string path = output_path + sepd + "CMakeLists.txt";
     return path;
+}
+
+int pip::scandir_filter_modules(const struct dirent* dir_ent)
+{
+    if (!strcmp(dir_ent->d_name, ".") || !strcmp(dir_ent->d_name, "..")) return 0;
+    std::string fname = dir_ent->d_name;
+
+    if (fname.find("modules") == std::string::npos) return 0;
+
+    return 1;
+}
+
+std::vector<std::string> pip::dirSearch(const char* dir_path)
+{
+    struct dirent **namelist;
+    std::vector<std::string> res;
+
+    int n = scandir( dir_path , &namelist, &pip::scandir_filter_modules, alphasort );
+    for (int i=0; i<n; i++)
+    {
+        std::string fname = namelist[i]->d_name;
+        res.push_back(fname);
+        free(namelist[i]);
+    }
+    free(namelist);
+
+    return res;
+}
+
+void pip::getModulesBasePath()
+{
+    struct stat info;
+
+    std::string path = base_path + sepd + "../";
+    scandir_filter_value = "modules";
+    for(int i=0; i<5; i++)
+    {
+        auto list = dirSearch(path.c_str());
+        if(!list.empty())
+        {
+            module_base_path = path + scandir_filter_value;
+            return;
+        }
+        else
+        {
+            path += "../";
+        }
+    }
+}
+
+std::unique_ptr<module> pip::getModule(std::string name)
+{
+    return std::make_unique<module>(module_base_path, name);
+}
+
+void pip::getModules()
+{
+    if(module_base_path.empty())
+    {
+        getModulesBasePath();
+    }
+
+    std::cout << "Module Base: " << module_base_path << std::endl;
+
+    modules.clear();
+    for(auto const& item : dependencies)
+    {
+        modules[item] = getModule(item);
+    }
+}
+
+std::list<std::unique_ptr<module>> pip::getModuleList()
+{
+    return std::list<std::unique_ptr<module>>();
 }
 
 void pip::gen_cmake()
@@ -232,14 +324,4 @@ void pip::gen_cmake()
     outfile.close();
 }
 
-std::vector<std::string> pip::split(const std::string& s, char delimiter)
-{
-   std::vector<std::string> tokens;
-   std::string token;
-   std::istringstream tokenStream(s);
-   while (std::getline(tokenStream, token, delimiter))
-   {
-      tokens.push_back(token);
-   }
-   return tokens;
-}
+} //namespace pip2cmake

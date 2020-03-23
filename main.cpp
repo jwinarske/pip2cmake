@@ -5,6 +5,8 @@
 #include "pip.h"
 
 
+using namespace pip2cmake;
+
 int main(int argc, char* argv[])
 {
     std::vector<std::string> args(argv + 1, argv + argc);
