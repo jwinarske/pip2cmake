@@ -1,10 +1,10 @@
 #include "module.h"
 
-//#include <ostream>
 #include <iostream>
 #include <sstream>
 #include <istream>
 #include <fstream>
+#include <algorithm>
 #include <dirent.h>
 
 #include "utilities.h"
