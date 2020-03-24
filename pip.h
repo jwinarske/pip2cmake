@@ -22,7 +22,6 @@ namespace pip2cmake
 
         void gen_cmake();
         std::string get_cmake_file();
-        std::list<std::string> getDependencies();
         std::vector<std::string> getExporters();
         std::vector<std::string> getModuleFlags();
         std::string getDescription();
@@ -33,13 +32,11 @@ namespace pip2cmake
         std::string getVersion();
         std::string getWebsite();
 
-        std::unique_ptr<module> getModule(std::string name);
-        std::list<std::unique_ptr<module>> getModuleList();
-
     private:
         void getMetaData(std::string inpfile);
         void getModules();
         void getModulesBasePath();
+        void addModulesRecursively(std::string module);
         std::vector<std::string> dirSearch(const char* dir_path);
         std::string scandir_filter_value;
         static int scandir_filter_modules(const struct dirent* dir_ent);

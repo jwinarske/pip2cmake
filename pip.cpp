@@ -32,8 +32,6 @@ void pip::getMetaData(std::string inpfile)
     if (!is)
         throw std::runtime_error("Error opening file: " + inpfile);
 
-    metaData.clear();
-
     std::string line;
     while (std::getline(is, line)) {
 
@@ -58,26 +56,42 @@ void pip::getMetaData(std::string inpfile)
         }
     }
 
+    metaData.clear();
+
     std::string key;
+    std::string value;
     auto lines = utilities::split(ss.str(),'\n');
     for(auto &l : lines)
     {
-        l = utilities::trim(l);
         if(l.find(':') != std::string::npos)
         {
             auto kv = utilities::split(l, ':');
-            if(!kv.empty())
+            
+            key = utilities::trim(kv[0]);
+            value = utilities::trim(kv[1]);
+
+            if(value.find_last_of(",") == (value.length()-1))
             {
-                key = kv[0];
-                metaData[key] = utilities::trim(kv[1]);
+                value.append(" ");
             }
+
+            metaData[key] = value;
         }
         else
         {
-            std::string value = metaData[key];
-            metaData[key] += l;
+            if(l.length() > 2)
+            {
+                value = utilities::trim(l);
+                if(value.find_last_of(",") == (value.length()-1))
+                {
+                    value.append(" ");
+                }
+                metaData[key].append(value);    
+            }
         }
     }
+
+    std::cout << "[dependencies] = [" << metaData["dependencies"] << "]" << std::endl;
 
     dependencies = utilities::split(metaData["dependencies"],',');
     for(auto &d : dependencies)
@@ -96,24 +110,6 @@ void pip::getMetaData(std::string inpfile)
     {
         m = utilities::trim(m);
     }
-}
-
-std::list<std::string> pip::getDependencies()
-{
-    std::list<std::string> list; 
-    for(auto &item : modules)
-    {
-        list.push_back(item.second->getID());
-        auto deps = item.second->getDependencies();
-        for(auto &d : deps)
-        {
-            list.push_back(d);
-        }
-    }
-    list.sort();
-    list.unique();
-
-    return list;
 }
 
 std::vector<std::string> pip::getExporters()
@@ -181,12 +177,6 @@ pip::pip(std::string infile, std::string outpath)
     getMetaData(infile);
 
     getModules();
-
-    auto deps = getDependencies();
-    for(auto &dep : deps)
-    {
-        std::cout << "dep: " << dep << std::endl;
-    }
 }
 
 void pip::print()
@@ -220,6 +210,7 @@ void pip::print()
     std::cout << "[Dependencies]\n";
     for(auto &mod : modules)
     {
+//        std::cout << mod.second->getID() << std::endl;
         mod.second->print();
     }
 }
@@ -278,9 +269,23 @@ void pip::getModulesBasePath()
     }
 }
 
-std::unique_ptr<module> pip::getModule(std::string name)
+void pip::addModulesRecursively(std::string dependencies)
 {
-    return std::make_unique<module>(module_base_path, name);
+    if(dependencies.empty())
+    {
+        return;
+    }
+
+    auto list = utilities::getValueList(dependencies);
+
+    for(auto const& item : list)
+    {
+        if ( modules.find(item) == modules.end() )
+        {
+            modules[item] = std::make_unique<module>(module_base_path, item);
+            addModulesRecursively( modules[item]->getDependencies() );
+        }
+    }
 }
 
 void pip::getModules()
@@ -293,15 +298,8 @@ void pip::getModules()
     std::cout << "Module Base: " << module_base_path << std::endl;
 
     modules.clear();
-    for(auto const& item : dependencies)
-    {
-        modules[item] = getModule(item);
-    }
-}
 
-std::list<std::unique_ptr<module>> pip::getModuleList()
-{
-    return std::list<std::unique_ptr<module>>();
+    addModulesRecursively( metaData["dependencies"] );
 }
 
 void pip::gen_cmake()

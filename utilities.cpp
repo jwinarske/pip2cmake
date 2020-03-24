@@ -5,6 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include <stack>
+#include <map>
 
 namespace pip2cmake
 {
@@ -38,6 +39,15 @@ namespace pip2cmake
             return s;
         }
 
+        bool replace(std::string& str, const std::string& from, const std::string& to)
+        {
+            size_t start_pos = str.find(from);
+            if(start_pos == std::string::npos)
+                return false;
+            str.replace(start_pos, from.length(), to);
+            return true;
+        }
+
         std::vector<std::string> split(const std::string& s, char delimiter)
         {
             std::vector<std::string> tokens;
@@ -49,6 +59,26 @@ namespace pip2cmake
             }
             return tokens;
         }
+
+        std::vector<std::string> getValueList(std::string value)
+        {
+            if(value.empty())
+            {
+                return std::vector<std::string>();
+            }
+
+            value = utilities::trim(value);
+            while(replace(value, "  ", " "));
+            auto list = utilities::split(value,' ');
+//std::cout << "KeyValue List: [" << value << "]" << std::endl;
+            for(auto &item : list)
+            {
+                std::replace( item.begin(), item.end(), ',', ' ');
+                item = utilities::trim(item);
+            }
+            return list;
+        }
+
 
         std::string normalize_path(std::string &path)
         {

@@ -20,14 +20,18 @@ namespace pip2cmake
         std::string getDescription();
         std::string getWebsite();
         std::string getLicense();
-        std::vector<std::string> getDependencies();
+        std::string getDependencies();
+        std::string getOSXFrameworks();
+        std::string getiOSFrameworks();
+        std::string getLinuxLibs();
+        std::string getLinuxPackages();
+        std::string getMingwLibs();
 
     private:
         std::map<std::string, std::string> metaData;
         void getMetaData(std::string inpfile);
         void listFilesRecursively(std::string basePath, std::string filename);
-
-        std::string normalizePath(std::string &path);
+        std::vector<std::string> getDependencies(std::string key);
 
         std::string base_path;
         std::string sepd;

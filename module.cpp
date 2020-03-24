@@ -55,6 +55,8 @@ module::module(std::string basePath, std::string module)
     if(!module_header.empty())
     {
         getMetaData( utilities::normalize_path(module_header) );
+        std::cout << module << " : metaData " << metaData.size() << std::endl;
+        std::cout << "dependencies length: " << metaData["dependencies"].length() << std::endl;
     }
 }
 
@@ -67,10 +69,41 @@ void module::print()
     std::cout << "Description : " << metaData["description"] << std::endl;
     std::cout << "Website : " << metaData["website"] << std::endl;
     std::cout << "License : " << metaData["license"] << std::endl;
-    auto deps = getDependencies();
+
+    auto list = utilities::getValueList( metaData["dependencies"] );
+    for(auto const& item : list)
+    {
+        std::cout << "<< dep >> " << item << std::endl;
+    }
+
+    list = utilities::getValueList( metaData["OSXFrameworks"] );
+    for(auto const& item : list)
+    {
+        std::cout << "<< OSXFramework >> " << item << std::endl;
+    }
+
+    list = utilities::getValueList( metaData["iOSFrameworks"] );
+    for(auto const& item : list)
+    {
+        std::cout << "<< iOSFrameworks >> " << item << std::endl;
+    }
+
+    list = utilities::getValueList( metaData["linuxLibs"] );
+    for(auto const& item : list)
+    {
+        std::cout << "<< linuxLibs >> " << item << std::endl;
+    }
+
+    list = utilities::getValueList( metaData["linuxPackages"] );
+    for(auto const& item : list)
+    {
+        std::cout << "<< linuxPackages >> " << item << std::endl;
+    }
+
+    auto deps = utilities::getValueList( metaData["mingwLibs"] );
     for(auto const& dep : deps)
     {
-        std::cout << "<< dep >> " << dep << std::endl;
+        std::cout << "<< mingwLibs >> " << dep << std::endl;
     }
 }
 
@@ -109,16 +142,34 @@ std::string module::getLicense()
     return metaData["license"];
 }
 
-std::vector<std::string> module::getDependencies()
+std::string module::getDependencies()
 {
-    std::string d = utilities::trim( metaData["dependencies"] );
-    auto list = utilities::split(d,' ');
-    for(auto &item : list)
-    {
-        std::string val = utilities::trim(item);
-        item = utilities::remove(val, ",");
-    }
-    return list;
+    return metaData["dependencies"];
+}
+
+std::string module::getOSXFrameworks()
+{
+    return metaData["OSXFrameworks"];
+}
+
+std::string module::getiOSFrameworks()
+{
+    return metaData["iOSFrameworks"];
+}
+
+std::string module::getLinuxLibs()
+{
+    return metaData["linuxLibs"];
+}
+
+std::string module::getLinuxPackages()
+{
+    return metaData["linuxPackages"];
+}
+
+std::string module::getMingwLibs()
+{
+    return metaData["mingwLibs"];
 }
 
 void module::getMetaData(std::string inpfile)
@@ -137,8 +188,6 @@ void module::getMetaData(std::string inpfile)
     std::ifstream is(inpfile);
     if (!is)
         throw std::runtime_error("Error opening file: " + inpfile);
-
-    metaData.clear();
 
     std::string line;
     while (std::getline(is, line)) {
@@ -159,31 +208,37 @@ void module::getMetaData(std::string inpfile)
             }
             else
             {
-                ss << line << "\n";
+                ss << line << " \n";
             }
         }
     }
+
+    metaData.clear();
 
     std::string key;
     auto lines = utilities::split(ss.str(),'\n');
     for(auto &l : lines)
     {
-        l = utilities::trim(l);
         if(l.find(':') != std::string::npos)
         {
             auto kv = utilities::split(l, ':');
-            if(!kv.empty())
-            {
-                key = kv[0];
-                metaData[key] = utilities::trim(kv[1]);
-            }
+            
+            std::string key = utilities::trim(kv[0]);
+            std::string value = utilities::trim(kv[1]);
+
+            metaData[key] = value;
         }
         else
         {
-            std::string value = metaData[key];
-            metaData[key] += l;
+            if(l.length() > 2)
+            {
+                std::replace( l.begin(), l.end(), ',', ' ');
+                metaData[key] += " " + l;
+            }
         }
     }
+
+    std::cout << "[dependencies] = [" << metaData["dependencies"] << "]" << std::endl;
 }
 
 } //namespace pip2cmake
