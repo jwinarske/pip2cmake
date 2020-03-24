@@ -6,6 +6,7 @@
 #include <fstream>
 #include <algorithm>
 #include <dirent.h>
+#include <cstring>
 
 #include "utilities.h"
 
