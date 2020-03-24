@@ -11,7 +11,7 @@ namespace pip2cmake
     {
     public:
         module(std::string basePath, std::string module);
-        void print();
+        friend std::ostream& operator<<(std::ostream& os, const module& mod);
 
         std::string getID();
         std::string getVendor();
@@ -28,24 +28,26 @@ namespace pip2cmake
         std::string getMingwLibs();
 
     private:
-        std::map<std::string, std::string> metaData;
         void getMetaData(std::string inpfile);
         void listFilesRecursively(std::string basePath, std::string filename);
-        std::vector<std::string> getDependencies(std::string key);
 
         std::string base_path;
         std::string sepd;
-        std::string output_path;
         std::string module_header;
+        std::map<std::string, std::string> metaData;
 
-        std::string ID;
-        std::string vendor;
-        std::string version;
-        std::string name;
-        std::string description;
-        std::string website;
-        std::string license;
-        std::vector<std::string> dependencies;
+        static constexpr const char* META_ID = "ID";
+        static constexpr const char* META_VENDOR = "vendor";
+        static constexpr const char* META_VERSION = "version";
+        static constexpr const char* META_NAME = "name";
+        static constexpr const char* META_DESCRIPTION = "description";
+        static constexpr const char* META_WEBSITE = "website";
+        static constexpr const char* META_LICENSE = "license";
+        static constexpr const char* META_DEPENDENCIES = "dependencies";
+        static constexpr const char* META_OSX_FRAMEWORKS = "OSXFrameworks";
+        static constexpr const char* META_IOS_FRAMEWORKS = "iOSFrameworks";
+        static constexpr const char* META_LINUX_LIBS = "linuxLibs";
+        static constexpr const char* META_LINUX_PACKAGES = "linuxPackages";
+        static constexpr const char* META_MINGW_LIBS = "mingwLibs";
     };
-
 }

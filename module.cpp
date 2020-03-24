@@ -1,10 +1,9 @@
 #include "module.h"
 
-#include <ostream>
+//#include <ostream>
 #include <iostream>
 #include <sstream>
 #include <istream>
-#include <iomanip>
 #include <fstream>
 #include <dirent.h>
 
@@ -49,127 +48,84 @@ module::module(std::string basePath, std::string module)
     base_path = basePath;
     sepd = (base_path.find("\\") != std::string::npos) ? "\\" : "/";
 
+#if defined(DEBUG)
     std::cout << "looking for module: " << module << std::endl;
+#endif    
     listFilesRecursively(basePath, module + ".h");
 
     if(!module_header.empty())
     {
         getMetaData( utilities::normalize_path(module_header) );
+#if defined(DEBUG)
         std::cout << module << " : metaData " << metaData.size() << std::endl;
         std::cout << "dependencies length: " << metaData["dependencies"].length() << std::endl;
-    }
-}
-
-void module::print()
-{
-    std::cout << "ID : " << metaData["ID"] << std::endl;
-    std::cout << "Vendor : " << metaData["vendor"] << std::endl;
-    std::cout << "Version : " << metaData["version"] << std::endl;
-    std::cout << "Name : " << metaData["name"] << std::endl;
-    std::cout << "Description : " << metaData["description"] << std::endl;
-    std::cout << "Website : " << metaData["website"] << std::endl;
-    std::cout << "License : " << metaData["license"] << std::endl;
-
-    auto list = utilities::getValueList( metaData["dependencies"] );
-    for(auto const& item : list)
-    {
-        std::cout << "<< dep >> " << item << std::endl;
-    }
-
-    list = utilities::getValueList( metaData["OSXFrameworks"] );
-    for(auto const& item : list)
-    {
-        std::cout << "<< OSXFramework >> " << item << std::endl;
-    }
-
-    list = utilities::getValueList( metaData["iOSFrameworks"] );
-    for(auto const& item : list)
-    {
-        std::cout << "<< iOSFrameworks >> " << item << std::endl;
-    }
-
-    list = utilities::getValueList( metaData["linuxLibs"] );
-    for(auto const& item : list)
-    {
-        std::cout << "<< linuxLibs >> " << item << std::endl;
-    }
-
-    list = utilities::getValueList( metaData["linuxPackages"] );
-    for(auto const& item : list)
-    {
-        std::cout << "<< linuxPackages >> " << item << std::endl;
-    }
-
-    auto deps = utilities::getValueList( metaData["mingwLibs"] );
-    for(auto const& dep : deps)
-    {
-        std::cout << "<< mingwLibs >> " << dep << std::endl;
+#endif
     }
 }
 
 std::string module::getID()
 {
-    return metaData["ID"];
+    return metaData [ META_ID ];
 }
 
 std::string module::getVendor()
 {
-    return metaData["vendor"];
+    return metaData [ META_VENDOR ];
 }
 
 std::string module::getVersion()
 {
-    return metaData["version"];
+    return metaData [ META_VERSION ];
 }
 
 std::string module::getName()
 {
-    return metaData["name"];
+    return metaData [ META_NAME ];
 }
 
 std::string module::getDescription()
 {
-    return metaData["description"];
+    return metaData [ META_DESCRIPTION ];
 }
 
 std::string module::getWebsite()
 {
-    return metaData["website"];
+    return metaData[ META_WEBSITE ];
 }
 
 std::string module::getLicense()
 {
-    return metaData["license"];
+    return metaData [ META_LICENSE ];
 }
 
 std::string module::getDependencies()
 {
-    return metaData["dependencies"];
+    return metaData [ META_DEPENDENCIES ];
 }
 
 std::string module::getOSXFrameworks()
 {
-    return metaData["OSXFrameworks"];
+    return metaData [ META_OSX_FRAMEWORKS ];
 }
 
 std::string module::getiOSFrameworks()
 {
-    return metaData["iOSFrameworks"];
+    return metaData [ META_IOS_FRAMEWORKS ];
 }
 
 std::string module::getLinuxLibs()
 {
-    return metaData["linuxLibs"];
+    return metaData [ META_LINUX_LIBS ];
 }
 
 std::string module::getLinuxPackages()
 {
-    return metaData["linuxPackages"];
+    return metaData [ META_LINUX_PACKAGES ];
 }
 
 std::string module::getMingwLibs()
 {
-    return metaData["mingwLibs"];
+    return metaData [ META_MINGW_LIBS ];
 }
 
 void module::getMetaData(std::string inpfile)
@@ -237,8 +193,63 @@ void module::getMetaData(std::string inpfile)
             }
         }
     }
-
+#if defined(DEBUG)
     std::cout << "[dependencies] = [" << metaData["dependencies"] << "]" << std::endl;
+#endif
+}
+
+std::ostream& operator<<(std::ostream& os, const module& mod)
+{
+    auto m = mod.metaData;
+
+    os << "** Module **\n";
+    os << "ID : " << m[ module::META_ID ] << "\n";
+    os << "Vendor : " << m[ module::META_VENDOR ] << "\n";
+    os << "Version : " << m[ module::META_VERSION ] << "\n";
+    os << "Name : " << m[ module::META_NAME ] << "\n";
+    os << "Description : " << m[ module::META_DESCRIPTION ] << "\n";
+    os << "Website : " << m[ module::META_WEBSITE ] << "\n";
+    os << "License : " << m[ module::META_LICENSE ] << "\n";
+
+    auto list = utilities::getValueList( m[ module::META_DEPENDENCIES ] );
+    for(auto const& item : list)
+    {
+        os << "<< dep >> " << item << "\n";
+    }
+
+    list = utilities::getValueList( m[ module::META_OSX_FRAMEWORKS ] );
+    for(auto const& item : list)
+    {
+        os << "<< OSXFramework >> " << item << "\n";
+    }
+
+    list = utilities::getValueList( m[ module::META_IOS_FRAMEWORKS ] );
+    for(auto const& item : list)
+    {
+        os << "<< iOSFrameworks >> " << item << "\n";
+    }
+
+    list = utilities::getValueList( m[ module::META_LINUX_LIBS ] );
+    for(auto const& item : list)
+    {
+        os << "<< linuxLibs >> " << item << "\n";
+    }
+
+    list = utilities::getValueList( m[ module::META_LINUX_PACKAGES ] );
+    for(auto const& item : list)
+    {
+        os << "<< linuxPackages >> " << item << "\n";
+    }
+
+    auto deps = utilities::getValueList( m[ module::META_MINGW_LIBS ] );
+    for(auto const& dep : deps)
+    {
+        os << "<< mingwLibs >> " << dep << "\n";
+    }
+
+    os << "\n";
+
+    return os;
 }
 
 } //namespace pip2cmake

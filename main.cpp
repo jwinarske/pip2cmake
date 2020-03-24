@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 
                 if(verbose)
                 {
-                    proj.print();
+                    std::cout << proj << std::endl;
                 }
 
                 std::cout << "Created \"" << proj.get_cmake_file() << "\"" << std::endl;

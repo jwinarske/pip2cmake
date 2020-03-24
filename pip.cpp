@@ -91,24 +91,26 @@ void pip::getMetaData(std::string inpfile)
         }
     }
 
+#if defined(DEBUG)
     std::cout << "[dependencies] = [" << metaData["dependencies"] << "]" << std::endl;
+#endif
 
     dependencies = utilities::split(metaData["dependencies"],',');
     for(auto &d : dependencies)
     {
-        d = utilities::trim(d);
+        d = utilities::ltrim(d);
     }
 
     exporters = utilities::split(metaData["exporters"],',');
     for(auto &e : exporters)
     {
-        e = utilities::trim(e);
+        e = utilities::ltrim(e);
     }
 
     moduleFlags = utilities::split(metaData["moduleFlags"],',');
     for(auto &m : moduleFlags)
     {
-        m = utilities::trim(m);
+        m = utilities::ltrim(m);
     }
 }
 
@@ -124,37 +126,37 @@ std::vector<std::string> pip::getModuleFlags()
 
 std::string pip::getDescription()
 {
-    return metaData["description"];
+    return metaData [ META_DESCRIPTION ];
 }
 
 std::string pip::getMainClass()
 {
-    return metaData["mainClass"];
+    return metaData [ META_MAIN_CLASS ];
 }
 
 std::string pip::getName()
 {
-    return metaData["name"];
+    return metaData [ META_NAME ];
 }
 
 std::string pip::getType()
 {
-    return metaData["type"];
+    return metaData [ META_TYPE ];
 }
 
 std::string pip::getVendor()
 {
-    return metaData["vendor"];
+    return metaData [ META_VENDOR ];
 }
 
 std::string pip::getVersion()
 {
-    return metaData["version"];
+    return metaData [ META_VERISON ];
 }
 
 std::string pip::getWebsite()
 {
-    return metaData["website"];
+    return metaData [ META_WEBSITE ];
 }
 
 pip::pip(std::string infile, std::string outpath)
@@ -177,42 +179,6 @@ pip::pip(std::string infile, std::string outpath)
     getMetaData(infile);
 
     getModules();
-}
-
-void pip::print()
-{
-    std::cout << "[Exporters]\n";
-    for(auto const& item : getExporters())
-    {
-        std::cout << item << std::endl;
-    }
-
-    std::cout << "[ModuleFlags]\n";
-    for(auto const& item : getModuleFlags())
-    {
-        std::cout << item << std::endl;
-    }
-
-    std::cout << "[Description]\n";
-    std::cout << getDescription() << std::endl;
-    std::cout << "[MainClass]\n";
-    std::cout << getMainClass() << std::endl;
-    std::cout << "[Name]\n";
-    std::cout << getName() << std::endl;
-    std::cout << "[Type]\n";
-    std::cout << getType() << std::endl;
-    std::cout << "[Vendor]\n";
-    std::cout << getVendor() << std::endl;
-    std::cout << "[Version]\n";
-    std::cout << getVersion() << std::endl;
-    std::cout << "[Website]\n";
-    std::cout << getWebsite() << std::endl;
-    std::cout << "[Dependencies]\n";
-    for(auto &mod : modules)
-    {
-//        std::cout << mod.second->getID() << std::endl;
-        mod.second->print();
-    }
 }
 
 std::string pip::get_cmake_file()
@@ -320,6 +286,39 @@ void pip::gen_cmake()
     outfile << get_target_config();
 #endif
     outfile.close();
+}
+
+std::ostream& operator<<(std::ostream& os, const pip& p)
+{
+    auto m = p.metaData;
+
+    os << "\n** PIP **\n";
+    os << "[Exporters]\n";
+    for(auto const& item : p.exporters)
+    {
+        os << item << "\n";
+    }
+
+    os << "[ModuleFlags]\n";
+    for(auto const& item : p.moduleFlags)
+    {
+        os << item << "\n";
+    }
+
+    os << "Description: " << m[ pip::META_DESCRIPTION ] << "\n";
+    os << "MainClass: " << m[ pip::META_MAIN_CLASS ] << "\n";
+    os << "Name: " << m[ pip::META_NAME ] << "\n";
+    os << "Type: " << m[ pip::META_TYPE ] << "\n";
+    os << "Vendor: " << m[ pip::META_VENDOR ] << "\n";
+    os << "Version: " << m[ pip::META_VERISON ] << "\n";
+    os << "Website: " << m[ pip::META_WEBSITE ] << "\n";
+    os << "Dependencies[]\n\n";
+    for(auto &mod : p.modules)
+    {
+        os << *mod.second;
+    }
+
+    return os;
 }
 
 } //namespace pip2cmake

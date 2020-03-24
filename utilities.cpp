@@ -30,24 +30,6 @@ namespace pip2cmake
             return rtrim(ltrim(s));
         }
 
-        std::string remove(std::string &s, std::string chars)
-        {
-            for(char c : chars)
-            {
-                s.erase(std::remove(s.begin(), s.end(), c), s.end());
-            }
-            return s;
-        }
-
-        bool replace(std::string& str, const std::string& from, const std::string& to)
-        {
-            size_t start_pos = str.find(from);
-            if(start_pos == std::string::npos)
-                return false;
-            str.replace(start_pos, from.length(), to);
-            return true;
-        }
-
         std::vector<std::string> split(const std::string& s, char delimiter)
         {
             std::vector<std::string> tokens;
@@ -60,6 +42,17 @@ namespace pip2cmake
             return tokens;
         }
 
+        bool replace(std::string& str, const std::string& from, const std::string& to)
+        {
+            size_t start_pos = str.find(from);
+            if(start_pos == std::string::npos)
+            {
+                return false;
+            }
+            str.replace(start_pos, from.length(), to);
+            return true;
+        }
+
         std::vector<std::string> getValueList(std::string value)
         {
             if(value.empty())
@@ -68,14 +61,17 @@ namespace pip2cmake
             }
 
             value = utilities::trim(value);
+            std::replace( value.begin(), value.end(), ',', ' ');
             while(replace(value, "  ", " "));
             auto list = utilities::split(value,' ');
-//std::cout << "KeyValue List: [" << value << "]" << std::endl;
+#if defined(DEBUG)
+            std::cout << "KeyValue List: [" << value << "]" << std::endl;
             for(auto &item : list)
             {
-                std::replace( item.begin(), item.end(), ',', ' ');
+            std::cout << "Value: [" << item << "]" << std::endl;
                 item = utilities::trim(item);
             }
+#endif            
             return list;
         }
 

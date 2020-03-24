@@ -18,7 +18,7 @@ namespace pip2cmake
     {
     public:
         pip(std::string file, std::string outpath);
-        void print();
+        friend std::ostream& operator<<(std::ostream& os, const pip& p);
 
         void gen_cmake();
         std::string get_cmake_file();
@@ -52,5 +52,13 @@ namespace pip2cmake
         std::string version;
 
         std::map<std::string, std::unique_ptr<module>> modules;
+
+        static constexpr const char* META_DESCRIPTION = "description";
+        static constexpr const char* META_MAIN_CLASS = "mainClass";
+        static constexpr const char* META_NAME = "name";
+        static constexpr const char* META_TYPE = "type";
+        static constexpr const char* META_VENDOR = "vendor";
+        static constexpr const char* META_VERISON = "version";
+        static constexpr const char* META_WEBSITE = "website";
     };
 }
